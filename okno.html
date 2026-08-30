@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Prohnuté okno</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Karla:wght@400;600&display=swap">
+<style>
+/* ---------------------------------------------------------
+   Prohnuté okno, do kterého si otevřeš libovolnou svoji
+   stránku. Nic se tu needituje — stránka se předává v adrese:
+
+       okno.html?page=moje-stranka.html
+
+   Bez parametru se ukáže přiložená ukazka-stranka.html.
+   --------------------------------------------------------- */
+
+:root{
+  --zem:#12100e; --zem-2:#191612; --linka:#2f2822;
+  --text:#f2ede5; --tlum:#a2988a; --luminofor:#ffb03a;
+}
+
+*{ box-sizing:border-box; }
+html{ overflow:hidden; }        /* otočený monitor nesmí rozjet posuvníky */
+
+body{
+  margin:0; height:100vh;
+  display:flex; flex-direction:column;
+  background:var(--zem);
+  color:var(--text);
+  font-family:"Karla","Segoe UI",Helvetica,Arial,sans-serif;
+}
+
+/* světlo, které monitor vrhá do místnosti */
+.zare{
+  position:fixed; left:50%; top:44%;
+  width:120vw; height:74vh;
+  transform:translate(-50%,-50%);
+  background:radial-gradient(closest-side, rgba(111,157,255,.15), transparent 72%);
+  pointer-events:none;
+}
+
+.plocha{
+  flex:1;
+  display:flex; align-items:center; justify-content:center;
+  padding:24px 20px 0;
+}
+#okno{ width:100%; }
+
+/* ---------- spodní lišta ---------- */
+
+.lista{
+  display:flex; gap:10px; align-items:center; justify-content:center;
+  flex-wrap:wrap;
+  padding:16px 20px 20px;
+}
+.box{
+  display:flex; align-items:center; gap:10px;
+  background:var(--zem-2); border:1px solid var(--linka);
+  border-radius:8px; padding:7px 14px; font-size:14px;
+}
+.box label{ color:var(--tlum); white-space:nowrap; }
+.hodnota{
+  font-family:"JetBrains Mono",ui-monospace,Consolas,monospace;
+  font-size:13px; color:var(--luminofor);
+  min-width:34px; text-align:right; font-variant-numeric:tabular-nums;
+}
+input[type=range]{ width:110px; accent-color:var(--luminofor); }
+input[type=text]{
+  font-family:"JetBrains Mono",ui-monospace,Consolas,monospace;
+  font-size:13px; width:230px;
+  background:transparent; border:0; color:var(--text);
+  padding:2px 0;
+}
+input[type=text]::placeholder{ color:var(--tlum); }
+button{
+  font:inherit; font-size:14px; cursor:pointer;
+  background:var(--zem-2); color:var(--text);
+  border:1px solid var(--linka); border-radius:8px; padding:8px 15px;
+}
+button:hover{ border-color:#5a4326; }
+button.hlavni{ border-color:var(--luminofor); color:var(--luminofor); background:rgba(255,176,58,.09); }
+button.on{ border-color:var(--luminofor); color:var(--luminofor); background:rgba(255,176,58,.09); }
+button:focus-visible, input:focus-visible{ outline:2px solid var(--luminofor); outline-offset:2px; }
+
+.napoveda{
+  text-align:center; color:var(--tlum); font-size:13px;
+  margin:0; padding:0 20px 14px;
+}
+.napoveda.potiz{
+  color:#ffd28a;
+  background:rgba(255,176,58,.10);
+  border:1px solid #5a4326;
+  border-radius:8px;
+  max-width:640px; margin:0 auto;
+  padding:10px 16px;
+}
+button:disabled{ opacity:.45; cursor:not-allowed; }
+.napoveda code{
+  font-family:"JetBrains Mono",ui-monospace,Consolas,monospace;
+  color:var(--luminofor); font-size:12.5px;
+}
+</style>
+</head>
+<body>
+
+<div class="zare"></div>
+
+<div class="plocha">
+  <div id="okno"></div>
+</div>
+
+<div class="lista">
+  <form class="box" id="formular">
+    <label for="cesta">Stránka</label>
+    <input type="text" id="cesta" placeholder="moje-stranka.html" autocomplete="off">
+    <button type="submit" class="hlavni">Otevřít</button>
+  </form>
+
+  <div class="box">
+    <label for="arc">Zakřivení</label>
+    <input type="range" id="arc" min="0" max="80" value="46">
+    <span class="hodnota" id="arc-val">46°</span>
+  </div>
+
+  <button type="button" id="klikani" class="on">Klikatelné</button>
+  <button type="button" id="spin">Točit sám</button>
+  <button type="button" id="reset">Vyrovnat</button>
+</div>
+
+<p class="napoveda" id="napoveda">
+  Klikej a roluj přímo v obrazovce — děje se to ve všech segmentech naráz. Tažením myší monitorem otočíš.
+  Stránku můžeš předat i v adrese: <code>okno.html?page=moje-stranka.html</code>
+</p>
+
+<script src="curved-screen.js"></script>
+<script>
+  /* ---- kterou stránku ukázat: z adresy, jinak přiloženou ukázku ---- */
+
+  var params = new URLSearchParams(location.search);
+  var stranka = params.get("page") || "ukazka-stranka.html";
+  document.getElementById("cesta").value = stranka;
+
+  var okno = document.getElementById("okno");
+
+  var monitor = CurvedScreen({
+    mount: "#okno",
+    page:  stranka,
+    arc:   46,
+    interactive: true,     // klikání a rolování uvnitř stránky
+
+    // Kdyby prohlížeč klikání nepovolil, ať se to člověk dozví rovnou tady,
+    // ne až v konzoli.
+    onProblem: function (text) {
+      var misto = document.getElementById("napoveda");
+      misto.textContent = text;
+      misto.classList.add("potiz");
+      var tlacitko = document.getElementById("klikani");
+      tlacitko.classList.remove("on");
+      tlacitko.disabled = true;
+    }
+  });
+
+  /* ---- monitor se šířkou řídí sám, ale musí se vejít i na výšku ---- */
+
+  function dopocitejSirku() {
+    // 1440 x 810 obrazovka + 120 px na nohu = poměr, který musí projít na výšku
+    var naVysku = (window.innerHeight - 150) * (1440 / 930);
+    okno.style.maxWidth = Math.max(320, Math.min(window.innerWidth - 40, naVysku)) + "px";
+    monitor.rebuild();
+  }
+  window.addEventListener("resize", dopocitejSirku);
+  dopocitejSirku();
+
+  /* ---- ovládání ---- */
+
+  document.getElementById("formular").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var nova = document.getElementById("cesta").value.trim();
+    if (!nova) return;
+    // Načtení znovu s novou adresou je nejjistější — iframe si sám natáhne
+    // správné styly i obrázky té stránky.
+    location.search = "?page=" + encodeURIComponent(nova);
+  });
+
+  var arcEl = document.getElementById("arc");
+  arcEl.addEventListener("input", function () {
+    document.getElementById("arc-val").textContent = this.value + "°";
+    monitor.setArc(this.value);
+  });
+
+  document.getElementById("klikani").addEventListener("click", function () {
+    monitor.interact();
+    this.classList.toggle("on");
+  });
+
+  document.getElementById("spin").addEventListener("click", function () {
+    monitor.spin();
+    this.classList.toggle("on");
+  });
+
+  document.getElementById("reset").addEventListener("click", function () {
+    monitor.reset();
+  });
+</script>
+
+</body>
+</html>

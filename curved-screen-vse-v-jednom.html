@@ -1,0 +1,1302 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CurvedScreen</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,700;12..96,800&family=JetBrains+Mono:wght@400;600&family=Karla:wght@400;600&display=swap">
+<style>
+/* ---------------------------------------------------------
+   Stránka je schválně jen v tmavé variantě — monitor musí
+   svítit z tmy, jinak celý efekt zhasne. Všechny barvy jsou
+   proto napsané natvrdo, ne převzaté z prohlížeče.
+   --------------------------------------------------------- */
+
+:root{
+  /* teplá tmavá zem, aby proti ní studeně svítící monitor vynikl */
+  --zem:      #12100e;
+  --zem-2:    #191612;
+  --plocha:   #1d1915;
+  --linka:    #2f2822;
+  --text:     #f2ede5;
+  --tlum:     #a2988a;
+  --luminofor:#ffb03a;   /* jantarová jako u starých monitorů */
+  --luminofor-tlum:#5a4326;
+
+  /* barvy uvnitř obrazovky — ty zůstávají studené, ať je kontrast */
+  --demo-bg:    #0b0e14;
+  --demo-panel: #141a26;
+  --demo-linka: #212a3b;
+  --demo-text:  #e7ecf5;
+  --demo-tlum:  #8b96ab;
+  --demo-akcent:#5b8cff;
+}
+
+*{ box-sizing:border-box; }
+
+/* otočený monitor může vykouknout ze stránky — ať kvůli tomu nevzniká
+   vodorovný posuvník (musí být i na html, nejen na body) */
+html{ overflow-x:hidden; }
+
+body{
+  margin:0;
+  background:var(--zem);
+  color:var(--text);
+  font-family:"Karla","Segoe UI",Helvetica,Arial,sans-serif;
+  font-size:16px;
+  line-height:1.65;
+  -webkit-font-smoothing:antialiased;
+  overflow-x:hidden;      /* otočený monitor může vykouknout ze stránky */
+}
+
+h1,h2{
+  font-family:"Bricolage Grotesque","Segoe UI",Helvetica,Arial,sans-serif;
+  text-wrap:balance;
+  margin:0;
+}
+
+.obal{ max-width:1120px; margin:0 auto; padding:0 24px; }
+.uzky{ max-width:680px; }
+
+/* ---------- hlavička ---------- */
+
+.hlava{
+  position:relative;
+  padding:64px 0 0;
+  text-align:center;
+  overflow:hidden;
+}
+.hlava::before{                       /* světlo, které monitor vrhá do místnosti */
+  content:"";
+  position:absolute; left:50%; top:120px;
+  width:1100px; height:520px;
+  transform:translateX(-50%);
+  background:radial-gradient(closest-side, rgba(111,157,255,.16), transparent 72%);
+  filter:blur(10px);
+  pointer-events:none;
+}
+.znacka{
+  font-family:"JetBrains Mono",ui-monospace,Consolas,monospace;
+  font-size:12px; letter-spacing:.22em; text-transform:uppercase;
+  color:var(--luminofor);
+  margin:0 0 14px;
+}
+.hlava h1{
+  font-size:clamp(42px, 7vw, 76px);
+  font-weight:800;
+  letter-spacing:-.035em;
+  line-height:.98;
+}
+.hlava p{
+  margin:16px auto 0;
+  max-width:560px;
+  color:var(--tlum);
+  font-size:18px;
+}
+
+/* ---------- monitor ---------- */
+
+.scena{ position:relative; margin-top:44px; }
+#monitor{ position:relative; z-index:1; }
+
+.ovladani{
+  display:flex; gap:10px; justify-content:center; flex-wrap:wrap;
+  margin-top:28px;
+}
+.box{
+  display:flex; align-items:center; gap:11px;
+  background:var(--zem-2);
+  border:1px solid var(--linka);
+  border-radius:8px;
+  padding:8px 14px;
+  font-size:14px;
+}
+.box label{ color:var(--tlum); }
+.hodnota{
+  font-family:"JetBrains Mono",ui-monospace,Consolas,monospace;
+  font-size:13px; color:var(--luminofor);
+  min-width:34px; text-align:right;
+  font-variant-numeric:tabular-nums;
+}
+input[type=range]{ width:118px; accent-color:var(--luminofor); }
+button{
+  font:inherit; font-size:14px; cursor:pointer;
+  background:var(--zem-2); color:var(--text);
+  border:1px solid var(--linka); border-radius:8px;
+  padding:9px 16px;
+  transition:border-color .15s, color .15s, background .15s;
+}
+button:hover{ border-color:var(--luminofor-tlum); }
+button.on{ border-color:var(--luminofor); color:var(--luminofor); background:rgba(255,176,58,.09); }
+button:focus-visible, input:focus-visible{ outline:2px solid var(--luminofor); outline-offset:2px; }
+
+.napoveda{
+  text-align:center; color:var(--tlum); font-size:14px;
+  margin:14px 0 0;
+}
+
+/* ---------- návod ---------- */
+
+.navod{ padding:96px 0 40px; }
+
+.krok{
+  display:grid;
+  grid-template-columns:52px 1fr;
+  gap:0 22px;
+  padding:32px 0;
+  border-top:1px solid var(--linka);
+}
+.krok:first-of-type{ border-top:0; }
+/* bez tohohle by se dlouhý řádek kódu nevešel a rozjel by celou stránku do šířky */
+.krok > div{ min-width:0; }
+.cislo{
+  font-family:"JetBrains Mono",ui-monospace,Consolas,monospace;
+  font-size:13px; color:var(--luminofor);
+  padding-top:5px;
+  font-variant-numeric:tabular-nums;
+}
+.krok h2{ font-size:26px; letter-spacing:-.02em; margin:0 0 8px; }
+.krok p{ margin:0 0 16px; color:var(--tlum); max-width:62ch; }
+.krok p:last-child{ margin-bottom:0; }
+
+pre{
+  background:var(--zem-2);
+  border:1px solid var(--linka);
+  border-left:3px solid var(--luminofor-tlum);
+  border-radius:0 10px 10px 0;
+  padding:16px 20px;
+  margin:0 0 16px;
+  overflow-x:auto;
+}
+pre:last-child{ margin-bottom:0; }
+code{
+  font-family:"JetBrains Mono",ui-monospace,Consolas,monospace;
+  font-size:13px;
+  line-height:1.7;
+  color:#e9dcc6;
+}
+p code, li code{
+  background:var(--zem-2);
+  border:1px solid var(--linka);
+  border-radius:5px;
+  padding:1px 6px;
+  font-size:12.5px;
+  color:var(--luminofor);
+}
+
+.tip{
+  background:rgba(255,176,58,.06);
+  border:1px solid var(--luminofor-tlum);
+  border-radius:10px;
+  padding:14px 18px;
+  color:var(--text);
+  margin:0;
+}
+
+/* tabulka nastavení */
+.tabulka{ overflow-x:auto; }
+table{ border-collapse:collapse; width:100%; min-width:560px; font-size:14.5px; }
+th,td{ text-align:left; padding:11px 14px; border-bottom:1px solid var(--linka); vertical-align:top; }
+th{
+  font-family:"JetBrains Mono",ui-monospace,Consolas,monospace;
+  font-size:11px; letter-spacing:.14em; text-transform:uppercase;
+  color:var(--tlum); font-weight:400;
+}
+td:first-child{
+  font-family:"JetBrains Mono",ui-monospace,Consolas,monospace;
+  font-size:13px; color:var(--luminofor); white-space:nowrap;
+}
+td:nth-child(2){
+  font-family:"JetBrains Mono",ui-monospace,Consolas,monospace;
+  font-size:13px; color:var(--tlum); white-space:nowrap;
+  font-variant-numeric:tabular-nums;
+}
+td:last-child{ color:var(--tlum); }
+
+.pozor{ list-style:none; padding:0; margin:0; display:grid; gap:14px; }
+.pozor li{
+  color:var(--tlum);
+  padding-left:20px;
+  position:relative;
+  max-width:70ch;
+}
+.pozor li::before{
+  content:"—";
+  position:absolute; left:0;
+  color:var(--luminofor);
+}
+.pozor b{ color:var(--text); }
+
+.pata{
+  border-top:1px solid var(--linka);
+  padding:28px 0 60px;
+  color:var(--tlum);
+  font-size:13.5px;
+  font-family:"JetBrains Mono",ui-monospace,Consolas,monospace;
+}
+
+@media (max-width:640px){
+  .krok{ grid-template-columns:1fr; gap:6px; }
+  .cislo{ padding-top:0; }
+}
+@media (prefers-reduced-motion: reduce){
+  *{ animation-duration:.01ms !important; transition-duration:.01ms !important; }
+}
+
+/* ---------------------------------------------------------
+   Ukázkový obsah, který se zobrazuje na monitoru.
+   Vlastní studená paleta, ať to na teplé stránce svítí.
+   --------------------------------------------------------- */
+
+.demo{
+  height:100%;
+  display:flex; flex-direction:column;
+  background:linear-gradient(160deg,#101728,#0b0e14 60%);
+  color:var(--demo-text);
+  font-family:"Karla","Segoe UI",Helvetica,Arial,sans-serif;
+}
+.demo-bar{
+  display:flex; align-items:center; justify-content:space-between;
+  padding:20px 44px; border-bottom:1px solid var(--demo-linka);
+}
+.demo-logo{ display:flex; align-items:center; gap:12px; font-size:23px; font-weight:600; }
+.demo-dot{ width:38px; height:38px; border-radius:11px; background:linear-gradient(135deg,var(--demo-akcent),#a06bff); }
+.demo-nav{ display:flex; gap:28px; color:var(--demo-tlum); font-size:16px; }
+.demo-nav span{ cursor:pointer; padding-bottom:3px; border-bottom:2px solid transparent; }
+.demo-nav span.on{ color:var(--demo-text); border-bottom-color:var(--demo-akcent); }
+.demo-btn{ cursor:pointer; }
+.demo-btn.hotovo{ background:#26c281; }
+.demo-body{ flex:1; display:grid; grid-template-columns:1.1fr .9fr; gap:40px; padding:54px 44px; align-content:start; }
+.demo-body h2{
+  font-family:"Bricolage Grotesque","Segoe UI",Helvetica,Arial,sans-serif;
+  font-size:58px; font-weight:800; line-height:1.04; letter-spacing:-.03em; margin:0 0 16px;
+}
+.demo-body h2 em{ font-style:normal; color:var(--demo-akcent); }
+.demo-body p{ font-size:18px; color:var(--demo-tlum); margin:0 0 28px; }
+.demo-btn{ display:inline-block; background:var(--demo-akcent); color:#08101f; font-weight:600; padding:13px 26px; border-radius:999px; }
+.demo-karty{ display:grid; gap:14px; }
+.demo-karta{ background:var(--demo-panel); border:1px solid var(--demo-linka); border-radius:14px; padding:17px 20px; }
+.demo-karta b{ display:block; margin-bottom:3px; }
+.demo-karta span{ color:var(--demo-tlum); font-size:14px; }
+.demo-pata{
+  padding:16px 44px 26px; border-top:1px solid var(--demo-linka);
+  color:var(--demo-tlum); font-size:14px; display:flex; gap:30px;
+}
+</style>
+</head>
+<body>
+
+<header class="hlava">
+  <div class="obal">
+    <p class="znacka">jeden soubor · žádný build</p>
+    <h1>CurvedScreen</h1>
+    <p>Vezme libovolný kus tvého HTML a zobrazí ho na zahnutém monitoru,
+       kterým jde otáčet myší o 360°.</p>
+
+    <div class="scena">
+      <!-- ===== sem se vykreslí monitor ===== -->
+      <div id="monitor"></div>
+
+      <div class="ovladani">
+        <div class="box">
+          <label for="arc">Zakřivení</label>
+          <input type="range" id="arc" min="0" max="80" value="46">
+          <span class="hodnota" id="arc-val">46°</span>
+        </div>
+        <div class="box">
+          <label for="cnt">Lamely</label>
+          <input type="range" id="cnt" min="6" max="40" step="2" value="24">
+          <span class="hodnota" id="cnt-val">24</span>
+        </div>
+        <button type="button" id="spin">Točit sám</button>
+        <button type="button" id="reset">Vyrovnat</button>
+      </div>
+
+      <p class="napoveda">Klikni v obrazovce na tlačítko nebo na položku menu — změní se to
+         ve všech segmentech naráz. Tažením myší monitorem otočíš, projde celých 360°.</p>
+    </div>
+  </div>
+</header>
+
+<main class="obal navod">
+
+  <section class="krok">
+    <div class="cislo">01</div>
+    <div>
+      <h2>Přidej soubor</h2>
+      <p>Zkopíruj <code>curved-screen.js</code> vedle své stránky a připoj ho na konec těla stránky:</p>
+      <pre><code>&lt;script src="curved-screen.js"&gt;&lt;/script&gt;</code></pre>
+    </div>
+  </section>
+
+  <section class="krok">
+    <div class="cislo">02</div>
+    <div>
+      <h2>Připrav obsah a místo pro monitor</h2>
+      <p>Obsah dej do <code>&lt;template&gt;</code> — díky tomu se sám nikde nezobrazí a použije se jen
+         uvnitř monitoru. Může to být cokoliv: hero sekce, celá tvoje homepage, obrázek, screenshot.</p>
+      <pre><code>&lt;div id="monitor"&gt;&lt;/div&gt;
+
+&lt;template id="obsah"&gt;
+  &lt;div style="height:100%; padding:60px; background:#111"&gt;
+    &lt;h1&gt;Moje stránka&lt;/h1&gt;
+    &lt;p&gt;Cokoliv sem napíšeš, bude na monitoru.&lt;/p&gt;
+  &lt;/div&gt;
+&lt;/template&gt;</code></pre>
+    </div>
+  </section>
+
+  <section class="krok">
+    <div class="cislo">03</div>
+    <div>
+      <h2>Spusť to</h2>
+      <pre><code>&lt;script&gt;
+  var monitor = CurvedScreen({
+    mount:   "#monitor",   // kam se to vykreslí
+    content: "#obsah"      // co se má zobrazit
+  });
+&lt;/script&gt;</code></pre>
+      <p class="tip">To je celé. Monitor se sám zmenší podle šířky místa, které dostane,
+         takže funguje i na mobilu. Chceš ho přes celou obrazovku? Dej <code>#monitor</code>
+         do sekce vysoké <code>100vh</code> a stránce tmavé pozadí.</p>
+    </div>
+  </section>
+
+  <section class="krok">
+    <div class="cislo">04</div>
+    <div>
+      <h2>Nebo tam pusť rovnou celou svoji stránku</h2>
+      <p>Nemusíš nic přepisovat do <code>&lt;template&gt;</code>. Když místo <code>content</code>
+         zadáš <code>page</code>, načte se na monitor tvoje hotová stránka tak, jak je —
+         každá lamela si ji vezme přes <code>iframe</code>:</p>
+      <pre><code>CurvedScreen({ mount: "#monitor", page: "index.html" });</code></pre>
+
+      <!-- jen-lokalne:start -->
+      <p>Takhle vypadá úplně obyčejná <code>ukazka-stranka.html</code>, která o monitoru vůbec neví:</p>
+      <div id="monitor2" style="margin:0 0 18px;"></div>
+      <!-- jen-lokalne:end -->
+
+      <p>Nechceš kvůli tomu psát ani ten jeden řádek? V balíčku je hotové
+         <code>okno.html</code> — otevřeš ho a stránku mu předáš rovnou v adrese:</p>
+      <pre><code>okno.html?page=moje-stranka.html</code></pre>
+
+      <p class="tip">Platí pro stránku na stejném webu — u cizích webů to většinou zakazuje
+         jejich server. A protože se načte tolikrát, kolik je lamel, nastaví se v tomhle
+         režimu <code>slats</code> automaticky na 16.</p>
+    </div>
+  </section>
+
+  <section class="krok">
+    <div class="cislo">05</div>
+    <div>
+      <h2>Ať se na to dá klikat</h2>
+      <p>Ve výchozím stavu je stránka uvnitř jen na koukání. Zapni <code>interactive</code>
+         a můžeš v ní klikat i rolovat kolečkem:</p>
+      <pre><code>CurvedScreen({
+  mount: "#monitor",
+  page:  "index.html",
+  interactive: true
+});</code></pre>
+
+      <p>Funguje to i pro obsah z <code>&lt;template&gt;</code> — a tam dokonce i ze souboru
+         na disku, protože se nic nenačítá zvenku. Jen si dej pozor na jednu věc: klony
+         obsahu nemají žádné obsluhy, takže je nevěš na jednotlivé prvky, ale jednou
+         na obal monitoru:</p>
+      <pre><code>document.getElementById("monitor").addEventListener("click", function (e) {
+  var tlacitko = e.target.closest(".moje-tlacitko");
+  if (tlacitko) tlacitko.textContent = "Hotovo ✓";
+});</code></pre>
+      <p>Knihovna pak podle té lamely, ve které se klikalo, srovná všechny ostatní.</p>
+
+      <p>Segmenty přitom zůstanou sladěné. Každá lamela je vlastní kopie stránky, takže
+         kdyby si každá žila po svém, rozpadlo by se to. Proto se myš do lamel nepouští
+         přímo — knihovna si spočítá, na které místo stránky jsi klikl, a ten klik
+         <b>rozešle do všech lamel naráz</b>. Rolování stejně: kolečko nastaví všem
+         lamelám tutéž pozici, ne že by každá rolovala sama.</p>
+
+      <p class="tip"><b>Nejde klikat? Skoro jistě to máš otevřené z disku.</b>
+         Když je stránka spuštěná dvojklikem (adresa začíná <code>file://</code>),
+         prohlížeč dovnitř rámů z bezpečnostních důvodů nepustí a monitor zůstane
+         jen na koukání — <code>okno.html</code> ti to v takovém případě samo napíše dole
+         pod obrazovkou. Řešení je pustit to přes server: v balíčku je
+         <code>spustit.cmd</code>, dvojklik a otevře se to na
+         <code>http://localhost:8080</code>. Stejně dobře funguje Live Server ve VS Code
+         nebo tvůj vlastní web.</p>
+
+      <p class="tip">Otáčení tím nepřijdeš — knihovna pozná, jestli jsi myší pohnul
+         (pak točíš monitorem) nebo ne (pak klikáš). Jen najetí myší
+         (CSS <code>:hover</code>) se napodobit nedá, to prohlížeč neumožňuje.</p>
+    </div>
+  </section>
+
+  <section class="krok">
+    <div class="cislo">06</div>
+    <div>
+      <h2>Nastavení</h2>
+      <p>Všechno je nepovinné — bez jediné volby to vypadá jako nahoře.</p>
+      <div class="tabulka">
+        <table>
+          <thead>
+            <tr><th>Volba</th><th>Výchozí</th><th>Co dělá</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>width</td><td>1440</td><td>Šířka obrazovky v px, ve které svůj obsah navrhuješ.</td></tr>
+            <tr><td>height</td><td>810</td><td>Výška návrhu. 1440 × 810 je poměr 16:9 jako u monitoru.</td></tr>
+            <tr><td>arc</td><td>46</td><td>Zakřivení ve stupních. 0 je rovná obrazovka, 80 skoro půlválec.</td></tr>
+            <tr><td>slats</td><td>24</td><td>Počet svislých lamel. Míň = hranatější a rychlejší, víc = hladší oblouk.</td></tr>
+            <tr><td>perspective</td><td>2200</td><td>Menší číslo je dramatičtější 3D. Pod ~1800 se to při otočení bokem hodně nafoukne.</td></tr>
+            <tr><td>background</td><td>#0b0e14</td><td>Barva pod obsahem, kdyby byl průhledný.</td></tr>
+            <tr><td>frame</td><td>#070a11</td><td>Barva rámečku monitoru.</td></tr>
+            <tr><td>interactive</td><td>false</td><td>Klikání a rolování uvnitř stránky. Jen s <code>page</code> a jen ze serveru.</td></tr>
+            <tr><td>drag</td><td>true</td><td>Otáčení tažením myši, na mobilu prstem.</td></tr>
+            <tr><td>inertia</td><td>true</td><td>Po puštění myši se to ještě chvíli dotáčí.</td></tr>
+            <tr><td>autoSpin</td><td>false</td><td>Točí se pořád dokola samo.</td></tr>
+            <tr><td>startY / startX</td><td>0</td><td>Počáteční natočení ve stupních, třeba <code>startY: 25</code> pro šikmý pohled.</td></tr>
+            <tr><td>bezel, seams, gloss, back, stand, boot</td><td>true</td><td>Rámeček, spáry mezi lamelami, odlesk skla, záda monitoru, noha, rozsvícení při načtení.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="krok">
+    <div class="cislo">07</div>
+    <div>
+      <h2>Ovládání z JavaScriptu</h2>
+      <pre><code>monitor.setArc(70);          // změní zakřivení
+monitor.setSlats(32);        // změní počet lamel
+monitor.setRotation(45, 10); // natočí (vodorovně, svisle)
+monitor.reset();             // zpátky čelem
+monitor.spin(true);          // začne se točit samo
+monitor.interact(true);      // zapne klikání a rolování uvnitř stránky
+monitor.scrollPage(600);     // odroluje stránku uvnitř (všechny lamely spolu)
+monitor.toggle("seams");     // přepne spáry
+monitor.rebuild();           // překreslí, když jsi změnil obsah
+monitor.destroy();           // úplně odstraní</code></pre>
+    </div>
+  </section>
+
+  <section class="krok">
+    <div class="cislo">08</div>
+    <div>
+      <h2>Na co si dát pozor</h2>
+      <ul class="pozor">
+        <li><b>Obsah se naklonuje tolikrát, kolik je lamel.</b> V režimu <code>content</code>
+            (kus HTML z <code>&lt;template&gt;</code>) proto dovnitř nedávej živé věci — formuláře,
+            přehrávače ani nic, co načítá data; klikat se tam nedá. Když potřebuješ, aby to
+            uvnitř žilo, použij <code>page</code> a <code>interactive: true</code>.</li>
+        <li><b>Kliky a rolování jdou do všech lamel naráz</b>, jinak by se každá kopie rozešla
+            po svém. Znamená to ale, že jeden klik na odkaz spustí tolik načtení stránky,
+            kolik je lamel — pro těžké stránky sniž <code>slats</code>.</li>
+        <li><b>Uvnitř obsahu používej třídy místo <code>id</code>.</b> Klonováním by ti vzniklo
+            dvacet stejných <code>id</code>.</li>
+        <li><b>Výkon:</b> 24 lamel znamená 24 kopií obsahu. U hodně složité stránky sniž
+            <code>slats</code> na 12–16, vypadá to skoro stejně.</li>
+        <li><b>Cesty k obrázkům</b> se počítají od stránky, do které je monitor vložený.</li>
+        <li><b>Když knihovnu vkládáš přímo do HTML</b> místo připojení souborem, přepiš v ní
+            ukázkové <code>&lt;/script&gt;</code> na <code>&lt;\/script&gt;</code> — jinak ti ta ukázka
+            v komentáři ukončí skript dřív, než začne. V souboru je to už takhle ošetřené.</li>
+        <li>Potřebuje to CSS 3D transformace. Funguje ve všech dnešních prohlížečích, v Internet Exploreru ne.</li>
+      </ul>
+    </div>
+  </section>
+
+</main>
+
+<footer class="obal pata">
+  curved-screen.js · dělej si s tím co chceš
+</footer>
+
+
+<!-- ===== ukázkový obsah, který se zobrazí na monitoru ===== -->
+<template id="obsah">
+  <div class="demo">
+    <div class="demo-bar">
+      <div class="demo-logo"><span class="demo-dot"></span> Studio</div>
+      <div class="demo-nav"><span class="on">Práce</span><span>O mně</span><span>Ceník</span><span>Kontakt</span></div>
+    </div>
+
+    <div class="demo-body">
+      <div>
+        <h2>Tvoje stránka,<br><em>na zahnutém monitoru.</em></h2>
+        <p>Tenhle text je obyčejné HTML v &lt;template&gt;. Skript ho rozřeže na svislé lamely
+           a poskládá do válce — a ty s ním pak můžeš točit myší.</p>
+        <span class="demo-btn">Chci to taky →</span>
+      </div>
+
+      <div class="demo-karty">
+        <div class="demo-karta"><b>Jeden soubor</b><span>Žádný build, žádné npm, žádné závislosti.</span></div>
+        <div class="demo-karta"><b>Otáčení o 360°</b><span>Chytneš myší a zatočíš. Vzadu jsou pořádná záda monitoru.</span></div>
+        <div class="demo-karta"><b>Responzivní</b><span>Samo se zmenší podle šířky okna.</span></div>
+      </div>
+    </div>
+
+    <div class="demo-pata">
+      <span>© 2026 Studio</span><span>Instagram</span><span>Behance</span><span>ahoj@studio.cz</span>
+    </div>
+  </div>
+</template>
+
+<script>
+/* =========================================================
+   CurvedScreen — libovolný kus HTML na zahnutém monitoru.
+
+   Bez knihoven, bez buildu. Stačí připojit tenhle soubor
+   a zavolat CurvedScreen({ ... }).
+
+   Jak to funguje:
+   Tvůj obsah se naklonuje do N svislých proužků (lamel).
+   Každá lamela ukazuje jen svůj výřez obsahu a je pootočená
+   kolem svislé osy, takže všechny dohromady tvoří válec —
+   dutou obrazovku jako u curved monitoru.
+
+   Použití:
+
+     <div id="obal"></div>
+
+     <template id="obsah">
+       ...tvoje HTML...
+     </template>
+
+     <script src="curved-screen.js"><\/script>
+     <script>
+       var monitor = CurvedScreen({
+         mount:   "#obal",
+         content: "#obsah"
+       });
+     <\/script>
+
+   Chceš na monitor rovnou celou svoji hotovou stránku?
+   Místo content dej page — každá lamela si ji načte v iframe:
+
+       CurvedScreen({ mount: "#obal", page: "index.html" });
+
+   (Zpětné lomítko v <\/script> je tam schválně: kdybys tenhle soubor vložil
+    přímo do stránky dovnitř značky script, ukončila by ji jinak už tahle
+    ukázka tady v komentáři. Ve svém HTML lomítko nepiš.)
+
+   Autor: napsáno pro kamaráda, dělej si s tím co chceš.
+   ========================================================= */
+
+(function (global) {
+  "use strict";
+
+  /* ---------- styly (vloží se do stránky jen jednou) ---------- */
+
+  var STYLE_ID = "curved-screen-styl";
+
+  var STYLE = [
+    ".cs-root{ position:relative; width:100%; }",
+
+    /* .cs-fit zmenšuje celou scénu, aby se vešla do šířky obalu */
+    ".cs-fit{ position:absolute; left:50%; top:0; transform-origin:50% 0; }",
+
+    ".cs-stage{ perspective:2200px; perspective-origin:50% 46%; }",
+
+    ".cs-stage{ touch-action:none; }",
+    ".cs-stage.cs-can-drag{ cursor:grab; }",
+    ".cs-stage.cs-dragging{ cursor:grabbing; }",
+
+    /* Klíčové pro klikání: obal i podložka leží v prostoru na z=0, kdežto
+       prostřední lamely jsou kvůli zakřivení kousek za nimi. Prohlížeč by
+       je tak při hledání cíle kliku zastínil — proto do nich myš nepouštíme
+       a necháváme reagovat jen samotné lamely. */
+    ".cs-rig{ transform-style:preserve-3d; touch-action:none; pointer-events:none; }",
+
+    ".cs-curve{ position:relative; transform-style:preserve-3d; transition:opacity .35s ease; pointer-events:none; }",
+    /* dokud se nenačtou všechny lamely, neukazujeme nic — jinak by naskakovaly po jedné */
+    ".cs-curve.cs-nacita{ opacity:0; }",
+
+    /* jedna svislá lamela */
+    ".cs-slat{ position:absolute; top:0; left:50%; overflow:hidden; backface-visibility:hidden; pointer-events:auto; }",
+
+    /* celý obsah uvnitř lamely — jen posunutý a oříznutý */
+    /* user-select vypnutý, ať se při otáčení nezačne označovat text */
+    ".cs-inner{ position:absolute; top:0; user-select:none; -webkit-user-select:none; }",
+    ".cs-screen{ position:relative; width:100%; height:100%; overflow:hidden; }",
+    /* Obal obsahu, kterým se v režimu content roluje (posouvá se celý).
+       Flexem zajistíme, že obsah vyplní obrazovku na výšku, ale klidně
+       může být i vyšší — pak se dá rolovat. */
+    ".cs-posun{ position:relative; min-height:100%; display:flex; flex-direction:column; }",
+    ".cs-posun > *{ flex:1 0 auto; }",
+
+    /* režim page: uvnitř je opravdová stránka v iframe.
+       pointer-events:none je nutné, jinak by myš klikala do stránky
+       místo aby otáčela monitorem. */
+    ".cs-iframe{ display:block; border:0; pointer-events:none; background:#fff; }",
+
+    /* ztmavení podle natočení — dělá dojem hloubky */
+    ".cs-shade{ position:absolute; inset:0; pointer-events:none; background:#000; }",
+
+    /* odlesk skla */
+    ".cs-gloss{ position:absolute; inset:0; pointer-events:none;",
+    "  background:linear-gradient(180deg, rgba(255,255,255,.10) 0%, rgba(255,255,255,.02) 18%, rgba(255,255,255,0) 45%); }",
+
+    /* viditelné spáry mezi lamelami */
+    ".cs-seams .cs-slat::after{ content:\"\"; position:absolute; inset:0; pointer-events:none;",
+    "  box-shadow: inset 1px 0 0 rgba(255,255,255,.07), inset -1px 0 0 rgba(0,0,0,.45); }",
+
+    /* rámeček monitoru — u každé lamely nahoře a dole, dohromady dá souvislý zahnutý rám */
+    ".cs-bezel .cs-gloss, .cs-bezel .cs-back{",
+    "  border-top:9px solid var(--cs-frame); border-bottom:9px solid var(--cs-frame); }",
+    ".cs-bezel .cs-slat.cs-edge-l .cs-gloss{ border-left:9px solid var(--cs-frame); }",
+    ".cs-bezel .cs-slat.cs-edge-r .cs-gloss{ border-right:9px solid var(--cs-frame); }",
+    ".cs-bezel .cs-gloss{ box-shadow: inset 0 1px 0 rgba(255,255,255,.07), inset 0 -1px 0 rgba(255,255,255,.05); }",
+
+    /* záda monitoru — deska otočená o 180°, vidět je až když monitor otočíš */
+    /* pointer-events:none je důležité: zadní deska leží přes obsah a brala by
+       mu kliky, i když ji zrovna není vidět */
+    ".cs-back{ position:absolute; top:0; left:50%; backface-visibility:hidden; pointer-events:none;",
+    "  background: repeating-linear-gradient(180deg, rgba(255,255,255,.022) 0px, rgba(255,255,255,.022) 2px, transparent 2px, transparent 9px),",
+    "              linear-gradient(90deg, #0a0e16 0%, #171e2d 50%, #0a0e16 100%); }",
+
+    /* noha monitoru */
+    ".cs-stand{ position:absolute; left:50%; top:100%; width:150px; height:78px; margin-left:-75px;",
+    "  background:linear-gradient(180deg,#11151f,#0a0d14); clip-path:polygon(34% 0, 66% 0, 78% 100%, 22% 100%); }",
+    ".cs-stand::after{ content:\"\"; position:absolute; left:-95px; bottom:-14px; width:340px; height:20px;",
+    "  border-radius:50%; background:linear-gradient(180deg,#151a26,#0a0d14); box-shadow:0 12px 40px rgba(0,0,0,.6); }",
+
+    /* rozsvícení obrazovky při načtení */
+    "@keyframes cs-power{",
+    "  0%{ opacity:0; filter:brightness(3) saturate(0); transform:scaleY(.004); }",
+    "  16%{ opacity:1; filter:brightness(3) saturate(0); transform:scaleY(.004); }",
+    "  34%{ transform:scaleY(1); filter:brightness(1.7) saturate(.6); }",
+    "  52%{ filter:brightness(.7); }",
+    "  70%{ filter:brightness(1.25); }",
+    "  100%{ filter:brightness(1); transform:scaleY(1); } }",
+    ".cs-boot{ animation:cs-power 1.1s ease-out both; }",
+
+    "@media (prefers-reduced-motion: reduce){ .cs-boot{ animation:none; } }"
+  ].join("\n");
+
+  function vlozStyly() {
+    if (document.getElementById(STYLE_ID)) return;
+    var s = document.createElement("style");
+    s.id = STYLE_ID;
+    s.textContent = STYLE;
+    document.head.appendChild(s);
+  }
+
+  /* ---------- pomocné ---------- */
+
+  function najdi(co) {
+    return typeof co === "string" ? document.querySelector(co) : co;
+  }
+
+  /* Vrátí funkci, která pokaždé vyrobí čerstvou kopii obsahu.
+     Umí <template> i normální element (ten se pak schová). */
+  function pripravObsah(zdroj) {
+    var e = najdi(zdroj);
+    if (!e) throw new Error("CurvedScreen: obsah nenalezen (" + zdroj + ")");
+
+    if (e.tagName === "TEMPLATE") {
+      return function () { return e.content.cloneNode(true); };
+    }
+    e.style.display = "none";
+    return function () {
+      var kopie = e.cloneNode(true);
+      kopie.removeAttribute("id");
+      kopie.style.display = "";
+      return kopie;
+    };
+  }
+
+  /* ---------- hlavní funkce ---------- */
+
+  function CurvedScreen(volby) {
+    vlozStyly();
+
+    var o = volby || {};
+
+    var nastaveni = {
+      width:       o.width       || 1440,   // šířka návrhu obrazovky v px
+      height:      o.height      || 810,    // výška návrhu (1440x810 = 16:9)
+      slats:       o.slats       || 24,     // počet lamel (víc = hladší oblouk, ale pomalejší)
+      arc:         o.arc         != null ? o.arc : 46,   // celkové zakřivení ve stupních (0 = rovná)
+      perspective: o.perspective || 2200,   // menší číslo = dramatičtější 3D
+      background:  o.background  || "#0b0e14",  // barva pod obsahem (kdyby byl průhledný)
+      frame:       o.frame       || "#070a11",  // barva rámečku monitoru
+
+      bezel:       o.bezel     !== false,   // rámeček monitoru
+      seams:       o.seams     !== false,   // viditelné spáry mezi lamelami
+      gloss:       o.gloss     !== false,   // odlesk skla
+      back:        o.back      !== false,   // záda monitoru (vidět po otočení)
+      stand:       o.stand     !== false,   // noha monitoru
+      boot:        o.boot      !== false,   // rozsvícení při načtení
+
+      interactive: !!o.interactive,         // klikání a rolování uvnitř stránky (jen s page)
+      drag:        o.drag      !== false,   // otáčení tažením myši
+      inertia:     o.inertia   !== false,   // doběh po puštění myši
+      autoSpin:    !!o.autoSpin,            // samovolné otáčení dokola
+      spinSpeed:   o.spinSpeed   || 0.25,   // stupňů na snímek
+      maxTiltX:    o.maxTiltX    != null ? o.maxTiltX : 75,  // omezení naklonění nahoru/dolů
+      maxScale:    o.maxScale    || 1,      // ať se to nezvětšuje nad původní velikost
+      standSpace:  o.stand !== false ? 120 : 0  // místo pod obrazovkou na nohu
+    };
+
+    // U opravdové stránky v iframe se každá lamela načítá zvlášť,
+    // tak ať jich není zbytečně moc.
+    if (o.page && o.slats == null) nastaveni.slats = 16;
+
+    /* Odkud brát obsah: buď kus HTML ze stránky (content),
+       nebo rovnou celá jiná stránka v iframe (page). */
+    var udelejObsah = o.page
+      ? function () {
+          var ram = document.createElement("iframe");
+          ram.className = "cs-iframe";
+          ram.src = o.page;
+          ram.setAttribute("scrolling", "no");
+          ram.setAttribute("tabindex", "-1");
+          ram.setAttribute("aria-hidden", "true");
+          ram.style.width  = nastaveni.width + "px";
+          ram.style.height = nastaveni.height + "px";
+          return ram;
+        }
+      : pripravObsah(o.content);
+
+    var root = najdi(o.mount);
+    if (!root) throw new Error("CurvedScreen: obal nenalezen (" + o.mount + ")");
+
+    /* ---------- kostra ---------- */
+
+    root.classList.add("cs-root");
+    root.innerHTML = "";
+
+    var fit = document.createElement("div");
+    fit.className = "cs-fit";
+
+    var stage = document.createElement("div");
+    stage.className = "cs-stage";
+    stage.style.perspective = nastaveni.perspective + "px";
+
+    var rig = document.createElement("div");
+    rig.className = "cs-rig";
+
+    var curve = document.createElement("div");
+    curve.className = "cs-curve";
+    curve.style.setProperty("--cs-frame", nastaveni.frame);
+
+    rig.appendChild(curve);
+    stage.appendChild(rig);
+    fit.appendChild(stage);
+    root.appendChild(fit);
+
+    /* ---------- stavba válce ---------- */
+
+    function postav() {
+      var W = nastaveni.width;
+      var H = nastaveni.height;
+      var n = nastaveni.slats;
+      var arc = nastaveni.arc;
+
+      var w  = W / n;          // šířka jedné lamely
+      var da = arc / n;        // úhel na jednu lamelu
+
+      // Poloměr válce tak, aby na sebe ploché lamely přesně navazovaly.
+      // Při zakřivení 0 použijeme obrovský poloměr = rovná obrazovka.
+      var R = da > 0.01 ? w / (2 * Math.tan(da * Math.PI / 360)) : 300000;
+
+      // Hloubka "mísy" — o kolik jsou kraje blíž než střed. Válec posuneme
+      // o půlku dozadu, aby se otáčel kolem svého středu a při pohledu
+      // z boku neujížděl stranou.
+      var depth = R * (1 - Math.cos(arc * Math.PI / 360));
+
+      fit.style.width  = W + "px";
+      fit.style.height = H + "px";
+      curve.style.width  = W + "px";
+      curve.style.height = H + "px";
+
+      var frag = document.createDocumentFragment();
+
+      for (var i = 0; i < n; i++) {
+        // První lamela (vlevo) má kladný úhel — je natočená doprava dovnitř,
+        // takže je obrazovka dutá jako opravdový zahnutý monitor.
+        var a = arc / 2 - da * (i + 0.5);
+
+        // Zápis zleva doprava = pořadí odzadu: nejdřív odsun dozadu,
+        // pak otočení, a nakonec posun celého válce dopředu.
+        var misto =
+          "translateZ(" + (R - depth / 2).toFixed(2) + "px) " +
+          "rotateY(" + a.toFixed(3) + "deg) " +
+          "translateZ(" + (-R).toFixed(2) + "px)";
+
+        var lamela = document.createElement("div");
+        lamela.className = "cs-slat";
+        lamela.style.width  = (w + 1) + "px";   // +1 px překryv, ať mezi lamelami nejsou vlásečnice
+        lamela.style.height = H + "px";
+        lamela.style.marginLeft = (-(w + 1) / 2) + "px";
+        lamela.style.transform = misto;
+        lamela.setAttribute("data-cs-i", i);    // podle toho se pozná, kam uživatel klikl
+        if (i === 0)     lamela.classList.add("cs-edge-l");
+        if (i === n - 1) lamela.classList.add("cs-edge-r");
+
+        var inner = document.createElement("div");
+        inner.className = "cs-inner";
+        inner.style.width  = W + "px";
+        inner.style.height = H + "px";
+        inner.style.left   = (-(i * w) + 0.5) + "px";
+
+        var screen = document.createElement("div");
+        screen.className = "cs-screen";
+        screen.style.background = nastaveni.background;
+
+        if (o.page) {
+          screen.appendChild(udelejObsah());          // stránka v iframe
+        } else {
+          var posunObal = document.createElement("div");   // obsahem se roluje posunutím
+          posunObal.className = "cs-posun";
+          posunObal.appendChild(udelejObsah());
+          screen.appendChild(posunObal);
+        }
+
+        inner.appendChild(screen);
+        lamela.appendChild(inner);
+
+        var shade = document.createElement("div");
+        shade.className = "cs-shade";
+        shade.style.opacity = (Math.abs(a) / 90 * 0.85).toFixed(3);
+        lamela.appendChild(shade);
+
+        if (nastaveni.gloss || nastaveni.bezel) {
+          var gloss = document.createElement("div");
+          gloss.className = "cs-gloss";
+          if (!nastaveni.gloss) gloss.style.background = "none";
+          lamela.appendChild(gloss);
+        }
+
+        frag.appendChild(lamela);
+
+        if (nastaveni.back) {
+          var back = document.createElement("div");
+          back.className = "cs-back";
+          back.style.width  = (w + 1) + "px";
+          back.style.height = H + "px";
+          back.style.marginLeft = (-(w + 1) / 2) + "px";
+          back.style.transform = misto + " rotateY(180deg)";
+          frag.appendChild(back);
+        }
+      }
+
+      if (nastaveni.stand) {
+        var noha = document.createElement("div");
+        noha.className = "cs-stand";
+        frag.appendChild(noha);
+      }
+
+      curve.innerHTML = "";
+      curve.appendChild(frag);
+
+      curve.classList.toggle("cs-seams", nastaveni.seams);
+      curve.classList.toggle("cs-bezel", nastaveni.bezel);
+
+      if (o.page) {
+        pockejNaLamely();
+      } else {
+        obrazovky  = [].slice.call(curve.querySelectorAll(".cs-screen"));
+        posunObaly = [].slice.call(curve.querySelectorAll(".cs-posun"));
+        zmerObsah();
+        nastavPosun(posun);
+      }
+
+      prepocitejVelikost();
+    }
+
+    /* ---------- sladění lamel ----------
+       Každá lamela je vlastní kopie obsahu. Aby se nerozešly, neposílá
+       se myš do nich přímo — spočítá se, kam do obsahu uživatel klikl,
+       a akce se provede ve všech lamelách naráz. */
+
+    var ramy = [];        // iframy lamel (režim page)
+    var obrazovky = [];   // plochy lamel (režim content)
+    var posunObaly = [];  // obaly, kterými se v režimu content roluje
+    var posun = 0;        // společná pozice odrolování
+    var maxPosun = 0;
+
+    function pockejNaLamely() {
+      ramy = [].slice.call(curve.querySelectorAll("iframe.cs-iframe"));
+      if (!ramy.length) return;
+
+      var zbyva = ramy.length;
+      curve.classList.add("cs-nacita");
+
+      ramy.forEach(function (ram) {
+        ram.addEventListener("load", function () {
+          if (--zbyva > 0) return;
+          curve.classList.remove("cs-nacita");
+          zmerStranku();
+          nastavPosun(posun);        // po překreslení se vrátíme, kde jsme byli
+        });
+      });
+    }
+
+    /* Projde všechny lamely. Když je stránka z cizí domény, prohlížeč
+       dovnitř nepustí — pak se prostě nic nesladí a zůstane jen koukání. */
+    function proKazdouLamelu(co) {
+      for (var i = 0; i < ramy.length; i++) {
+        try {
+          var d = ramy[i].contentDocument;
+          // null = prohlížeč dovnitř vůbec nepustí (jiná doména nebo file:// z disku)
+          if (!d) return false;
+          if (d.body) co(ramy[i].contentWindow, d, i);
+        } catch (e) { return false; }
+      }
+      return true;
+    }
+
+    function zmerStranku() {
+      var vyskaStranky = 0;
+      var slo = proKazdouLamelu(function (w, d) {
+        // odkaz do nového okna by otevřel tolik panelů, kolik je lamel
+        var odkazy = d.querySelectorAll("a[target='_blank']");
+        for (var i = 0; i < odkazy.length; i++) odkazy[i].removeAttribute("target");
+        if (!vyskaStranky) vyskaStranky = d.documentElement.scrollHeight;
+      });
+
+      if (!slo && nastaveni.interactive) {
+        nastaveni.interactive = false;
+        var potiz = location.protocol === "file:"
+          ? "Klikání uvnitř nejde, protože je stránka otevřená z disku (file://). Spusť ji přes lokální server — v balíčku je na to spustit.cmd."
+          : "Klikání uvnitř nejde: stránka v monitoru je z jiné domény, tam prohlížeč nepustí.";
+        if (typeof o.onProblem === "function") o.onProblem(potiz);
+        if (window.console) console.warn("CurvedScreen: " + potiz);
+      }
+      maxPosun = Math.max(0, vyskaStranky - nastaveni.height);
+    }
+
+    /* Kolik toho v režimu content je pod okrajem obrazovky. */
+    function zmerObsah() {
+      maxPosun = posunObaly.length
+        ? Math.max(0, posunObaly[0].scrollHeight - nastaveni.height)
+        : 0;
+    }
+
+    function nastavPosun(kam) {
+      posun = Math.max(0, Math.min(maxPosun, kam));
+      if (o.page) {
+        proKazdouLamelu(function (w) { w.scrollTo(0, posun); });
+      } else {
+        for (var i = 0; i < posunObaly.length; i++) {
+          posunObaly[i].style.transform = "translateY(" + (-posun) + "px)";
+        }
+      }
+    }
+
+    /* Kam uživatel klikl, přepočítané na souřadnice uvnitř obsahu.
+       offsetX/offsetY umí prohlížeč spočítat i u otočené lamely. */
+    function bodVeStrance(e) {
+      var lamela = e.target && e.target.closest ? e.target.closest(".cs-slat") : null;
+      if (!lamela) return null;
+      var i = +lamela.getAttribute("data-cs-i");
+      var w = nastaveni.width / nastaveni.slats;
+      return {
+        x: i * w + e.offsetX - 0.5,
+        // v režimu page je souřadnice v okně iframu, v režimu content v celém obsahu
+        y: o.page ? e.offsetY : e.offsetY + posun
+      };
+    }
+
+    /* Režim page: klik se pošle do všech iframů naráz. */
+    function klikniVsude(bod) {
+      proKazdouLamelu(function (w, d) {
+        var cil = d.elementFromPoint(bod.x, bod.y);
+        if (!cil) return;
+        ["mousedown", "mouseup", "click"].forEach(function (druh) {
+          cil.dispatchEvent(new w.MouseEvent(druh, {
+            bubbles: true, cancelable: true, view: w,
+            clientX: bod.x, clientY: bod.y
+          }));
+        });
+      });
+    }
+
+    /* Režim content: obsah je normální HTML v naší stránce, takže klik
+       trefí rovnou správný prvek a obsluha proběhne sama — jen v jedné
+       lamele. Ostatní lamely proto podle ní srovnáme. */
+    function srovnejKopie(cil) {
+      var zdroj = cil && cil.closest ? cil.closest(".cs-screen") : null;
+      if (!zdroj) return;
+
+      // setTimeout (ne requestAnimationFrame): musí to proběhnout i tehdy,
+      // když je panel prohlížeče na pozadí, kde se snímky nekreslí.
+      setTimeout(function () {
+        var vzor = zdroj.innerHTML;
+        for (var i = 0; i < obrazovky.length; i++) {
+          if (obrazovky[i] !== zdroj) obrazovky[i].innerHTML = vzor;
+        }
+        posunObaly = [].slice.call(curve.querySelectorAll(".cs-posun"));
+        nastavPosun(posun);
+      }, 0);
+    }
+
+    /* ---------- zmenšení, aby se to vešlo do obalu ---------- */
+
+    function prepocitejVelikost() {
+      var kDispozici = root.clientWidth || nastaveni.width;
+      var s = Math.min(kDispozici / nastaveni.width, nastaveni.maxScale);
+      if (!(s > 0)) s = 1;
+
+      fit.style.transform = "translateX(-50%) scale(" + s.toFixed(4) + ")";
+      // obal si vyhradí přesně tolik místa, kolik zmenšená scéna zabere
+      root.style.height = ((nastaveni.height + nastaveni.standSpace) * s) + "px";
+    }
+
+    window.addEventListener("resize", prepocitejVelikost);
+
+    /* ---------- otáčení myší ---------- */
+
+    var rotY = o.startY || 0, rotX = o.startX || 0;
+    var velY = 0;
+    var tahne = false, lastX = 0, lastY = 0;
+    var tazeno = 0;       // o kolik se myš pohnula — podle toho poznáme klik od otáčení
+    var bezi = false;
+
+    function pouzij() {
+      rig.style.transform = "rotateX(" + rotX.toFixed(2) + "deg) rotateY(" + rotY.toFixed(2) + "deg)";
+    }
+
+    function start(e) {
+      // klik do ovládacích prvků uvnitř stránky monitorem netočí
+      if (e.target.closest && e.target.closest("[data-cs-ignore]")) return;
+      tahne = true;
+      velY = 0;
+      tazeno = 0;
+      lastX = e.clientX;
+      lastY = e.clientY;
+      stage.classList.add("cs-dragging");
+    }
+
+    function pohyb(e) {
+      if (!tahne) return;
+      var dx = e.clientX - lastX;
+      var dy = e.clientY - lastY;
+      lastX = e.clientX;
+      lastY = e.clientY;
+      tazeno += Math.abs(dx) + Math.abs(dy);
+
+      rotY += dx * 0.35;                     // vodorovně bez omezení — projde celých 360°
+      rotX -= dy * 0.25;                     // svisle omezíme, ať se to nepřevrátí
+      if (rotX >  nastaveni.maxTiltX) rotX =  nastaveni.maxTiltX;
+      if (rotX < -nastaveni.maxTiltX) rotX = -nastaveni.maxTiltX;
+
+      velY = dx * 0.35;
+      pouzij();
+    }
+
+    function konec() {
+      tahne = false;
+      stage.classList.remove("cs-dragging");
+    }
+
+    function smycka() {
+      if (!tahne) {
+        var zmena = false;
+        if (nastaveni.autoSpin) { rotY += nastaveni.spinSpeed; zmena = true; }
+        if (nastaveni.inertia && Math.abs(velY) > 0.02) {
+          rotY += velY;
+          velY *= 0.94;                      // tření, pohyb postupně vyhasne
+          zmena = true;
+        }
+        if (zmena) pouzij();
+      }
+      requestAnimationFrame(smycka);
+    }
+
+    if (nastaveni.drag) {
+      stage.classList.add("cs-can-drag");
+      root.addEventListener("pointerdown", start);
+      document.addEventListener("pointermove", pohyb);
+      document.addEventListener("pointerup", konec);
+      document.addEventListener("pointercancel", konec);
+    }
+
+    /* ---------- klikání a rolování uvnitř stránky ---------- */
+
+    function kolecko(e) {
+      if (!nastaveni.interactive || maxPosun <= 0) return;
+      e.preventDefault();               // roluje se stránka v monitoru, ne stránka pod ním
+      nastavPosun(posun + e.deltaY);
+    }
+
+    function klik(e) {
+      if (!nastaveni.interactive) return;
+      if (tazeno > 6) return;           // tohle nebyl klik, ale otáčení monitorem
+      if (o.page) {
+        var bod = bodVeStrance(e);
+        if (bod) klikniVsude(bod);
+      } else {
+        srovnejKopie(e.target);
+      }
+    }
+
+    /* V režimu content je obsah opravdové HTML, takže by na něj myš
+       fungovala i bez nás. To nechceme: když se monitorem točí nebo
+       je klikání vypnuté, klik zahodíme dřív, než se k obsahu dostane. */
+    function hlidejKlik(e) {
+      if (o.page) return;
+      if (!nastaveni.interactive || tazeno > 6) {
+        e.stopPropagation();
+        e.preventDefault();
+      }
+    }
+
+    root.addEventListener("click", hlidejKlik, true);
+    root.addEventListener("wheel", kolecko, { passive: false });
+    root.addEventListener("click", klik);
+
+    /* ---------- spuštění ---------- */
+
+    postav();
+    pouzij();
+
+    if (nastaveni.boot) {
+      curve.classList.add("cs-boot");
+      setTimeout(function () { curve.classList.remove("cs-boot"); }, 1300);
+    }
+
+    if (!bezi) { bezi = true; requestAnimationFrame(smycka); }
+
+    /* ---------- co se dá ovládat zvenku ---------- */
+
+    return {
+      root: root,
+      rig: rig,
+
+      /* změna zakřivení za běhu, např. monitor.setArc(70) */
+      setArc: function (stupne) { nastaveni.arc = +stupne; postav(); return this; },
+
+      /* změna počtu lamel */
+      setSlats: function (pocet) { nastaveni.slats = Math.max(2, Math.round(pocet)); postav(); return this; },
+
+      /* natočení: monitor.setRotation(45, 10) */
+      setRotation: function (y, x) {
+        rotY = +y || 0;
+        if (x != null) rotX = +x;
+        velY = 0;
+        pouzij();
+        return this;
+      },
+
+      /* zpátky do čelního pohledu */
+      reset: function () { return this.setRotation(0, 0); },
+
+      /* samovolné otáčení zapnout/vypnout: monitor.spin(true) */
+      spin: function (zapnout) {
+        nastaveni.autoSpin = zapnout == null ? !nastaveni.autoSpin : !!zapnout;
+        return this;
+      },
+
+      /* klikání a rolování uvnitř stránky zapnout/vypnout */
+      interact: function (zapnout) {
+        nastaveni.interactive = zapnout == null ? !nastaveni.interactive : !!zapnout;
+        return this;
+      },
+
+      /* odrolovat stránku uvnitř na danou pozici (všechny lamely společně) */
+      scrollPage: function (y) { nastavPosun(+y || 0); return this; },
+
+      /* přepínače vzhledu */
+      toggle: function (co, zapnout) {
+        if (!(co in nastaveni)) return this;
+        nastaveni[co] = zapnout == null ? !nastaveni[co] : !!zapnout;
+        postav();
+        return this;
+      },
+
+      /* překreslit (třeba když se změnil obsah v template) */
+      rebuild: postav,
+
+      /* úplné odstranění */
+      destroy: function () {
+        window.removeEventListener("resize", prepocitejVelikost);
+        root.removeEventListener("wheel", kolecko);
+        root.removeEventListener("click", klik);
+        root.removeEventListener("click", hlidejKlik, true);
+        root.removeEventListener("pointerdown", start);
+        document.removeEventListener("pointermove", pohyb);
+        document.removeEventListener("pointerup", konec);
+        document.removeEventListener("pointercancel", konec);
+        nastaveni.autoSpin = false;
+        nastaveni.inertia = false;
+        root.innerHTML = "";
+        root.classList.remove("cs-root");
+        root.style.height = "";
+      }
+    };
+  }
+
+  global.CurvedScreen = CurvedScreen;
+
+})(window);
+
+</script>
+<script>
+  var monitor = CurvedScreen({
+    mount:   "#monitor",
+    content: "#obsah",
+    arc:     46,
+    slats:   24,
+    interactive: true      // dá se klikat i na obsah z <template>
+  });
+
+  /* Obsah v monitoru je jen naklonované HTML, takže na něm nejsou žádné
+     obsluhy — ty si přidáme sem, na jedno místo. Knihovna klik provede
+     v první lamele a ostatní podle ní srovná. */
+  document.getElementById("monitor").addEventListener("click", function (e) {
+    var tlacitko = e.target.closest ? e.target.closest(".demo-btn") : null;
+    if (tlacitko) {
+      tlacitko.textContent = "Máš to mít ✓";
+      tlacitko.classList.add("hotovo");
+      return;
+    }
+
+    var polozka = e.target.closest ? e.target.closest(".demo-nav span") : null;
+    if (polozka) {
+      var sourozenci = polozka.parentNode.children;
+      for (var i = 0; i < sourozenci.length; i++) sourozenci[i].classList.remove("on");
+      polozka.classList.add("on");
+    }
+  });
+
+  /* Druhý monitor v návodu: uvnitř běží opravdová stránka (režim page). */
+  if (document.getElementById("monitor2")) {
+    CurvedScreen({
+      mount: "#monitor2",
+      page:  "ukazka-stranka.html",
+      arc:   40,
+      interactive: true,     // zkus v ní kliknout nebo zarolovat
+      stand: false,
+      boot:  false,
+      startY: -12,
+      startX: 5
+    });
+  }
+
+  /* ---- ovládací prvky pod monitorem (jsou mimo monitor, takže s ním netočí) ---- */
+
+  var arcEl = document.getElementById("arc");
+  var cntEl = document.getElementById("cnt");
+
+  arcEl.addEventListener("input", function () {
+    document.getElementById("arc-val").textContent = this.value + "°";
+    monitor.setArc(this.value);
+  });
+
+  cntEl.addEventListener("input", function () {
+    document.getElementById("cnt-val").textContent = this.value;
+    monitor.setSlats(this.value);
+  });
+
+  document.getElementById("spin").addEventListener("click", function () {
+    monitor.spin();
+    this.classList.toggle("on");
+  });
+
+  document.getElementById("reset").addEventListener("click", function () {
+    monitor.reset();
+  });
+</script>
+
+</body>
+</html>
