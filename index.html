@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KORCA - Kammené kobercé</title>
+    <meta name="description" content="Korca - kammené koberce">
+    <!-- Open Graph / Sdílecí obrázek -->
+    <meta property="og:image" content="logo.jpg">
+    <link rel="icon" href="favicion.png" type="image/png">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #2c2c2a;
+            line-height: 1.7;
+            background: #ffffff;
+        }
+
+        /* Navigation */
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.5rem 2rem;
+            background: #1a1a1a;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .nav-logo {
+            height: 45px;
+            width: auto;
+            display: flex;
+            align-items: left;
+        }
+
+        .nav-logo img {
+            height: 100%;
+            width: auto;
+            align-items: left;
+        }
+
+        .nav-menu {
+            display: flex;
+            list-style: none;
+            gap: 2rem;
+            align-items: right;
+        }
+
+        .nav-menu a {
+            color: #d4af37;
+            text-decoration: none;
+            font-size: 0.95rem;
+            transition: color 0.3s ease;
+            font-weight: 500;
+        }
+
+        .nav-menu a:hover {
+            color: #e8c547;
+        }
+
+        .nav-icon {
+            height: 35px;
+            width: auto;
+        }
+
+        .nav-icon img {
+            height: 100%;
+            width: auto;
+        }
+
+        .hamburger {
+            display: none;
+            flex-direction: column;
+            cursor: pointer;
+        }
+
+        .hamburger span {
+            width: 25px;
+            height: 3px;
+            background: #d4af37;
+            margin: 5px 0;
+            transition: 0.3s;
+            border-radius: 2px;
+        }
+
+        .hamburger.active span:nth-child(1) {
+            transform: rotate(-45deg) translate(-8px, 8px);
+        }
+
+        .hamburger.active span:nth-child(2) {
+            opacity: 0;
+        }
+
+        .hamburger.active span:nth-child(3) {
+            transform: rotate(45deg) translate(-8px, -8px);
+        }
+
+        /* Mobile Navigation */
+        @media (max-width: 768px) {
+            .nav-menu {
+                position: absolute;
+                top: 70px;
+                left: 0;
+                flex-direction: column;
+                background: #1a1a1a;
+                width: 100%;
+                text-align: center;
+                display: none;
+                gap: 1rem;
+                padding: 2rem 0;
+            }
+
+            .nav-menu.active {
+                display: flex;
+            }
+
+            .hamburger {
+                display: flex;
+            }
+
+            nav {
+                padding: 1rem 1.5rem;
+            }
+        }
+
+        /* Hero Section */
+        .hero {
+            background: linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.4)), url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 600"><rect fill="%231a1a1a" width="1200" height="600"/><circle cx="300" cy="150" r="80" fill="%23d4af37" opacity="0.1"/><circle cx="900" cy="450" r="120" fill="%23d4af37" opacity="0.08"/></svg>');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            min-height: 500px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            color: white;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="pebbles" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse"><circle cx="10" cy="10" r="8" fill="%23d4af37" opacity="0.03"/></pattern></defs><rect width="100" height="100" fill="url(%23pebbles)"/></svg>');
+            pointer-events: none;
+        }
+
+        .hero-content {
+            z-index: 10;
+            max-width: 700px;
+            padding: 2rem;
+        }
+
+        .hero-content h1 {
+            font-size: 3.5rem;
+            margin-bottom: 1rem;
+            color: #d4af37;
+            font-weight: 300;
+            letter-spacing: 2px;
+        }
+
+        .hero-content p {
+            font-size: 1.2rem;
+            margin-bottom: 2rem;
+            color: #f0f0f0;
+            font-weight: 300;
+        }
+
+        .hero-content .tagline {
+            font-size: 1rem;
+            color: #d4af37;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            margin-top: 1rem;
+        }
+
+        @media (max-width: 768px) {
+            .hero {
+                min-height: 350px;
+                background-attachment: scroll;
+            }
+
+            .hero-content h1 {
+                font-size: 2rem;
+            }
+
+            .hero-content p {
+                font-size: 1rem;
+            }
+        }
+
+        /* Section Styles */
+        section {
+            padding: 4rem 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .section-title {
+            text-align: center;
+            font-size: 2.5rem;
+            color: #1a1a1a;
+            margin-bottom: 1rem;
+            font-weight: 300;
+            letter-spacing: 1px;
+        }
+
+        .section-subtitle {
+            text-align: center;
+            font-size: 1rem;
+            color: #d4af37;
+            margin-bottom: 3rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        /* Why Choose Us Section */
+        .why-us {
+            background: #f5f1e8;
+        }
+
+        .why-us-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4rem;
+            align-items: center;
+            margin-top: 3rem;
+        }
+
+        .why-us-icon {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .why-us-icon img {
+            height: 120px;
+            width: auto;
+            opacity: 0.3;
+        }
+
+        .why-us-text h3 {
+            font-size: 1.3rem;
+            color: #1a1a1a;
+            margin-bottom: 1rem;
+            font-weight: 500;
+        }
+
+        .why-us-text p {
+            color: #555;
+            line-height: 1.8;
+            margin-bottom: 1.5rem;
+            text-align: justify;
+        }
+
+        @media (max-width: 768px) {
+            .why-us-content {
+                grid-template-columns: 1fr;
+                gap: 2rem;
+            }
+
+            .section-title {
+                font-size: 1.8rem;
+            }
+        }
+
+        /* Showcase Section */
+        .showcase {
+            background: white;
+        }
+
+        .showcase-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+            margin-top: 3rem;
+        }
+
+        .showcase-item {
+            background: #f9f7f4;
+            border-radius: 4px;
+            overflow: hidden;
+            border: 1px solid #e8e4dc;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .showcase-item:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        .showcase-image {
+            width: 100%;
+            aspect-ratio: 1;
+            background: linear-gradient(135deg, #d4af37 0%, #c99a2e 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 3rem;
+            font-weight: 300;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .showcase-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .showcase-info {
+            padding: 1.5rem;
+        }
+
+        .showcase-info h4 {
+            font-size: 1.1rem;
+            color: #d4af37;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+
+        .showcase-info p {
+            font-size: 0.9rem;
+            color: #666;
+            line-height: 1.6;
+        }
+
+        @media (max-width: 768px) {
+            .showcase-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .showcase-image {
+                aspect-ratio: 1.2;
+            }
+        }
+
+        /* Show-room Interactive Viewer Styles */
+        .showroom-container {
+            margin-top: 3rem;
+            background: #f9f7f4;
+            border-radius: 8px;
+            padding: 2rem;
+            border: 1px solid #e8e4dc;
+        }
+
+        .showroom-main-display {
+            width: 100%;
+            height: 400px;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 1.5rem;
+            background: #1a1a1a;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .showroom-main-display img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: opacity 0.3s ease;
+        }
+
+        .showroom-thumbnails {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+        }
+
+        .showroom-thumb {
+            width: 80px;
+            height: 80px;
+            border-radius: 4px;
+            overflow: hidden;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: border-color 0.3s ease, transform 0.3s ease;
+            background: #fff;
+        }
+
+        .showroom-thumb img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .showroom-thumb.active, .showroom-thumb:hover {
+            border-color: #d4af37;
+            transform: scale(1.05);
+        }
+
+        @media (max-width: 768px) {
+            .showroom-main-display {
+                height: 250px;
+            }
+            .showroom-thumb {
+                width: 60px;
+                height: 60px;
+            }
+        }
+
+        /* Contact Section */
+        .contact {
+            background: #1a1a1a;
+            color: white;
+            text-align: center;
+        }
+
+        .contact .section-title {
+            color: #d4af37;
+            font-size: 2.2rem;
+        }
+
+        .contact-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 3rem;
+            margin-top: 3rem;
+            align-items: center;
+        }
+
+        .contact-logo {
+            text-align: center;
+        }
+
+        .contact-logo img {
+            height: 100px;
+            width: auto;
+            margin-bottom: 2rem;
+            opacity: 0.8;
+        }
+
+        .contact-text {
+            text-align: left;
+        }
+
+        .contact-text p {
+            font-size: 1.1rem;
+            color: #e8e4dc;
+            line-height: 1.8;
+            margin-bottom: 2rem;
+        }
+
+        .contact-cta {
+            display: inline-block;
+            background: #d4af37;
+            color: #1a1a1a;
+            padding: 1rem 2.5rem;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 1rem;
+            border-radius: 2px;
+            transition: background 0.3s ease, transform 0.3s ease;
+            letter-spacing: 1px;
+        }
+
+        .contact-cta:hover {
+            background: #e8c547;
+            transform: translateY(-2px);
+        }
+
+        @media (max-width: 768px) {
+            .contact-content {
+                grid-template-columns: 1fr;
+                gap: 2rem;
+            }
+
+            .contact-text {
+                text-align: center;
+            }
+        }
+
+        /* Footer */
+        footer {
+            background: #0f0f0f;
+            color: #888;
+            text-align: center;
+            padding: 2rem;
+            font-size: 0.9rem;
+        }
+
+        footer p {
+            margin: 0.5rem 0;
+        }
+
+        /* Utility Classes */
+        .divider {
+            width: 60px;
+            height: 2px;
+            background: #d4af37;
+            margin: 1rem auto;
+        }
+
+        .fade-in {
+            animation: fadeIn 0.8s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav>
+        <div class="nav-logo">
+            <img src="logo_name.png" alt="KORCA">
+        </div>
+        <ul class="nav-menu">
+            <li><a href="#home">Domů</a></li>
+            <li><a href="#why">Proč nás</a></li>
+            <li><a href="#showroom">Show-room</a></li>
+            <li><a href="#showcase">Galerie</a></li>
+            <li><a href="#contact">Kontakt</a></li>
+        </ul>
+        <div class="hamburger">
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
+        <div class="nav-icon">
+            <svg width="35" height="35" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="50" cy="30" r="25" fill="none" stroke="#d4af37" stroke-width="2"/>
+                <path d="M 30 70 Q 50 55 70 70 L 70 95 L 30 95 Z" fill="none" stroke="#d4af37" stroke-width="2"/>
+            </svg>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero" id="home">
+        <div class="hero-content fade-in">
+            <img src="logo_name.png" alt="KORCA" style="max-width: 600px; width: 100%; height: auto; margin-bottom: 2rem;">
+            <p>Kammené kobercé - Kvalita a Řemeslo</p>
+            <div class="divider"></div>
+            <p class="tagline">Vytváříme povrchy, které vytrvají</p>
+        </div>
+    </section>
+
+    <!-- Show-room Section with Interactive Switcher -->
+    <section id="showroom" class="showroom-section">
+        <h2 class="section-title">Show-room</h2>
+        <p class="section-subtitle">Naše kammené koberce mohou mít různou barvu</p>
+        <div class="showroom-container fade-in">
+            <div class="showroom-main-display">
+                <img id="mainShowroomImage" src="1.png" alt="Show-room ukázka">
+            </div>
+            <div class="showroom-thumbnails">
+                <div class="showroom-thumb active" onclick="changeShowroomImage('1.png', this)">
+                    <img src="1.png" alt="Ukázka 1">
+                </div>
+                <div class="showroom-thumb" onclick="changeShowroomImage('2.png', this)">
+                    <img src="2.png" alt="Ukázka 2">
+                </div>
+                <div class="showroom-thumb" onclick="changeShowroomImage('3.png', this)">
+                    <img src="3.png" alt="Ukázka 3">
+                </div>
+                <div class="showroom-thumb" onclick="changeShowroomImage('4.png', this)">
+                    <img src="4.png" alt="Ukázka 4">
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Why Choose Us -->
+    <section class="why-us" id="why">
+        <h2 class="section-title">Proč si vybrat právě nás?</h2>
+        <div class="divider"></div>
+        
+        <div class="why-us-content">
+            <div class="why-us-icon">
+                <svg width="120" height="120" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="60" cy="40" r="30" fill="none" stroke="#d4af37" stroke-width="2"/>
+                    <path d="M 40 90 Q 60 75 80 90 L 80 110 L 40 110 Z" fill="none" stroke="#d4af37" stroke-width="2"/>
+                    <circle cx="60" cy="60" r="8" fill="#d4af37"/>
+                </svg>
+            </div>
+            <div class="why-us-text">
+                <h3>Kvalita bez kompromisů</h3>
+                <p>Naší hlavní prioritou je nabídnout Vám co nejvyšší kvalitu materiálů, aby Vám kamenný koberec sloužil dlouhé roky. V tomto oboru podle nás nelze dělat kompromisy.</p>
+                
+                <h3>Odborné zpracování</h3>
+                <p>Stejně důležitá jako samotný materiál je také správná technologická a řemeslná aplikace. Pouze kombinace kvalitních surovin a odborného provedení zajistí, že výsledný povrch bude dlouhodobě funkční, pevný a estetický.</p>
+                
+                <h3>Individuální přístup</h3>
+                <p>Každý projekt je pro nás jedinečný. Nasloucháme Vašim potřebám a vytváříme řešení, která dokonale odpovídají Vašim představám a požadavkům.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Showcase Section -->
+    <section class="showcase" id="showcase">
+        <h2 class="section-title">Představivosti se meze nekladou</h2>
+        <p class="section-subtitle">Zde je několik ukázek barevných kombinací</p>
+        
+        <div class="showcase-grid">
+            <div class="showcase-item fade-in">
+                <div class="showcase-image">1</div>
+                <div class="showcase-info">
+                    <h4>Přírodní odstín</h4>
+                    <p>Klasická kombinace přírodních barev, která se hodí ke každému stylu.</p>
+                </div>
+            </div>
+
+            <div class="showcase-item fade-in">
+                <div class="showcase-image">2</div>
+                <div class="showcase-info">
+                    <h4>Hnědá paleta</h4>
+                    <p>Teplé hnědé tóny vytváří pohodlné a luxusní prostředí.</p>
+                </div>
+            </div>
+
+            <div class="showcase-item fade-in">
+                <div class="showcase-image">3</div>
+                <div class="showcase-info">
+                    <h4>Moderní kombinace</h4>
+                    <p>Směsice barev pro současný moderní design vašeho prostoru.</p>
+                </div>
+            </div>
+
+            <div class="showcase-item fade-in">
+                <div class="showcase-image">4</div>
+                <div class="showcase-info">
+                    <h4>Exkluzivní návrh</h4>
+                    <p>Speciální kombinace, která podtrhuje individualitu a osobitost.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Contact Section -->
+    <section class="contact" id="contact">
+        <h2 class="section-title">Pojďme vytvořit něco nádherného</h2>
+        
+        <div class="contact-content">
+            <div class="contact-logo">
+                <img src="logo_ikon.png" alt="KORCA logo" style="max-height: 100px; width: auto;">
+            </div>
+            <div class="contact-text">
+                <p>Pokud Vás zajímá cena, tak nás neváhejte kontaktovat. Jsme tu pro Vás s odpověďmi na všechny Vaše otázky a nabídneme Vám optimální řešení pro Váš projekt.</p>
+                <a href="mailto:info@korca.cz" class="contact-cta">Kontaktujte nás</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <p>&copy; 2024 KORCA - Kammené kobercé. Všechna práva vyhrazena.</p>
+        <p>Vytváříme kvalitní kamenné koberce od roku 2015</p>
+    </footer>
+
+    <script>
+        // Hamburger Menu Toggle
+        const hamburger = document.querySelector('.hamburger');
+        const navMenu = document.querySelector('.nav-menu');
+
+        hamburger.addEventListener('click', () => {
+            hamburger.classList.toggle('active');
+            navMenu.classList.toggle('active');
+        });
+
+        // Close menu when link is clicked
+        document.querySelectorAll('.nav-menu a').forEach(link => {
+            link.addEventListener('click', () => {
+                hamburger.classList.remove('active');
+                navMenu.classList.remove('active');
+            });
+        });
+
+        // Smooth scrolling for navigation links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+
+        // Show-room Image Switcher Function
+        function changeShowroomImage(imageSrc, element) {
+            const mainImage = document.getElementById('mainShowroomImage');
+            mainImage.style.opacity = 0;
+            setTimeout(() => {
+                mainImage.src = imageSrc;
+                mainImage.style.opacity = 1;
+            }, 150);
+
+            document.querySelectorAll('.showroom-thumb').forEach(thumb => {
+                thumb.classList.remove('active');
+            });
+            element.classList.add('active');
+        }
+    </script>
+</body>
+</html>
